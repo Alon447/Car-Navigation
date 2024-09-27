@@ -3,6 +3,7 @@ import useGlobalStore from '../store/useGlobalStore';
 import { Car } from 'src/types/types';
 import { useState } from 'react';
 import { LatLngExpression } from 'leaflet';
+import AutocompleteSearch from './AutocompleteSearch/AutocompleteSearch';
 
 const SetupCars: React.FC = () => {
 	const { cars, setCars, isMapVisible, setIsMapVisible } = useGlobalStore();
@@ -49,21 +50,15 @@ const SetupCars: React.FC = () => {
 						className="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm"
 					>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-							<input
-								type="text"
-								placeholder="Start Point"
-								value={car.startPoint}
-								onChange={(e) => updateCar(car.id, 'startPoint', e.target.value)}
-								className="border rounded-md p-2 w-full"
+							<AutocompleteSearch
+								carId={car.id}
+								isStart={true}
+							/>
+							<AutocompleteSearch
+								carId={car.id}
+								isStart={false}
 							/>
 
-							<input
-								type="text"
-								placeholder="End Point"
-								value={car.endPoint}
-								onChange={(e) => updateCar(car.id, 'endPoint', e.target.value)}
-								className="border rounded-md p-2 w-full"
-							/>
 							<input
 								type="time"
 								value={car.startTime}
