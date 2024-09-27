@@ -4,6 +4,7 @@ import { Car } from 'src/types/types';
 import { useState } from 'react';
 import { LatLngExpression } from 'leaflet';
 import AutocompleteSearch from './AutocompleteSearch/AutocompleteSearch';
+import { updateCar } from '../utils/carFunctions';
 
 const SetupCars: React.FC = () => {
 	const { cars, setCars, isMapVisible, setIsMapVisible } = useGlobalStore();
@@ -19,10 +20,6 @@ const SetupCars: React.FC = () => {
 			startTime: '09:00',
 		};
 		setCars([...cars, newCar]);
-	};
-
-	const updateCar = (id: number, field: keyof Car, value: string | boolean) => {
-		setCars(cars.map((car) => (car.id === id ? { ...car, [field]: value } : car)));
 	};
 
 	const removeCar = (id: number) => {
@@ -62,14 +59,14 @@ const SetupCars: React.FC = () => {
 							<input
 								type="time"
 								value={car.startTime}
-								onChange={(e) => updateCar(car.id, 'startTime', e.target.value)}
+								onChange={(e) => setCars(updateCar(cars, car.id, 'startTime', e.target.value))}
 								className="border rounded-md p-2 w-full"
 							/>
 						</div>
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<select
 								value={car.navigationMethod}
-								onChange={(e) => updateCar(car.id, 'navigationMethod', e.target.value)}
+								onChange={(e) => setCars(updateCar(cars, car.id, 'navigationMethod', e.target.value))}
 								className="border rounded-md p-2 flex-grow"
 							>
 								<option value="fastest">Fastest Route</option>
@@ -80,7 +77,7 @@ const SetupCars: React.FC = () => {
 								<input
 									type="checkbox"
 									checked={car.useTollRoad}
-									onChange={(e) => updateCar(car.id, 'useTollRoad', e.target.checked)}
+									onChange={(e) => setCars(updateCar(cars, car.id, 'useTollRoad', e.target.checked))}
 									className="mr-2"
 								/>
 								Use Toll Roads
