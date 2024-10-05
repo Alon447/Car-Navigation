@@ -1,3 +1,4 @@
+@import 'leaflet/dist/leaflet.css';
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -19,7 +20,7 @@ h1 {
 }
 
 @layer base {
-  :root {
+	:root {
 		--radius: 0.5rem;
 	}
 }

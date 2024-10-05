@@ -1,15 +1,26 @@
-import { MapPin, Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2 } from 'lucide-react';
+import { Car, osmData } from 'src/types/types';
 import useGlobalStore from '../store/useGlobalStore';
-import { Car } from 'src/types/types';
-import { useState } from 'react';
-import { LatLngExpression } from 'leaflet';
-import AutocompleteSearch from './AutocompleteSearch/AutocompleteSearch';
-import { updateCar } from '../utils/carFunctions';
+import { Button } from './ui/button';
+import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import Autosuggest from 'react-autosuggest';
+import debounce from 'lodash.debounce';
 
 const SetupCars: React.FC = () => {
-	const { cars, setCars, isMapVisible, setIsMapVisible } = useGlobalStore();
+	const { cars, setCars } = useGlobalStore();
+	const [input, setInput] = useState('');
+	const { data: suggestions = [], refetch } = useQuery<osmData[]>({
+		queryKey: ['suggestions', input],
+		queryFn: async () => {
+			const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&countrycodes=il&q=${input}`);
+			const data = await res.json();
+			return data;
+		},
+		enabled: false,
+	});
+	const debouncedRefetch = useMemo(() => debounce(() => refetch(), 300), [refetch]);
 
-	// const [currentEditingCar, setCurrentEditingCar] = useState<{ id: number; field: 'startPoint' | 'endPoint' } | null>(null);
 	const addCar = () => {
 		const newCar: Car = {
 			id: Date.now(),
@@ -22,21 +33,27 @@ const SetupCars: React.FC = () => {
 		setCars([...cars, newCar]);
 	};
 
+	const updateCar = (id: number, field: keyof Car, value: string | boolean) => {
+		setCars(cars.map((car) => (car.id === id ? { ...car, [field]: value } : car)));
+	};
+
 	const removeCar = (id: number) => {
 		setCars(cars.filter((car) => car.id !== id));
 	};
 
-	// const handleMapPointSelect = (position: LatLngExpression) => {
-	// 	if (currentEditingCar) {
-	// 		const { id, field } = currentEditingCar;
-	// 		// updateCar(id, field, `${position[0]}, ${position[1]}`);
-	// 		setCurrentEditingCar(null);
-	// 	}
-	// };
-	// const openMap = (id: number, field: 'startPoint' | 'endPoint') => {
-	// 	setCurrentEditingCar({ id, field });
-	// 	setIsMapVisible(true);
-	// };
+	const renderSuggestion = (suggestion: osmData) => <div className="p-2 hover:bg-gray-100 cursor-pointer">{suggestion.display_name}</div>;
+
+	const inputProps = (car: Car, field: 'startPoint' | 'endPoint') => ({
+		placeholder: field === 'startPoint' ? 'Start Point' : 'End Point',
+		value: car[field],
+		onChange: (_: React.FormEvent<HTMLElement>, { newValue }: Autosuggest.ChangeEvent) => {
+			updateCar(car.id, field, newValue);
+			setInput(newValue);
+			debouncedRefetch();
+		},
+		onBlur: () => setInput(''),
+		className: 'border rounded-md p-2 w-full',
+	});
 	return (
 		<div className="bg-white shadow-lg rounded-lg overflow-hidden mb-8">
 			<div className="p-6">
@@ -47,26 +64,44 @@ const SetupCars: React.FC = () => {
 						className="mb-6 p-4 border border-gray-200 rounded-lg shadow-sm"
 					>
 						<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-							<AutocompleteSearch
-								carId={car.id}
-								isStart={true}
-							/>
-							<AutocompleteSearch
-								carId={car.id}
-								isStart={false}
-							/>
-
+							<div className="relative">
+								{/* <input
+									type="text"
+									placeholder="Start Point"
+									value={car.startPoint}
+									onChange={(e) => updateCar(car.id, 'startPoint', e.target.value)}
+									className="border rounded-md p-2 w-full pr-10"
+								/> */}
+								<Autosuggest
+									suggestions={suggestions}
+									onSuggestionsFetchRequested={() => {}}
+									onSuggestionsClearRequested={() => setInput('')}
+									getSuggestionValue={(suggestion) => suggestion.display_name}
+									renderSuggestion={renderSuggestion}
+									inputProps={inputProps(car, 'startPoint')}
+								/>
+							</div>
+							<div className="relative">
+								<Autosuggest
+									suggestions={suggestions}
+									onSuggestionsFetchRequested={() => refetch()}
+									onSuggestionsClearRequested={() => setInput('')}
+									getSuggestionValue={(suggestion) => suggestion.display_name}
+									renderSuggestion={renderSuggestion}
+									inputProps={inputProps(car, 'endPoint')}
+								/>
+							</div>
 							<input
 								type="time"
 								value={car.startTime}
-								onChange={(e) => setCars(updateCar(cars, car.id, 'startTime', e.target.value))}
+								onChange={(e) => updateCar(car.id, 'startTime', e.target.value)}
 								className="border rounded-md p-2 w-full"
 							/>
 						</div>
 						<div className="flex flex-wrap items-center justify-between gap-4">
 							<select
 								value={car.navigationMethod}
-								onChange={(e) => setCars(updateCar(cars, car.id, 'navigationMethod', e.target.value))}
+								onChange={(e) => updateCar(car.id, 'navigationMethod', e.target.value)}
 								className="border rounded-md p-2 flex-grow"
 							>
 								<option value="fastest">Fastest Route</option>
@@ -77,26 +112,29 @@ const SetupCars: React.FC = () => {
 								<input
 									type="checkbox"
 									checked={car.useTollRoad}
-									onChange={(e) => setCars(updateCar(cars, car.id, 'useTollRoad', e.target.checked))}
+									onChange={(e) => updateCar(car.id, 'useTollRoad', e.target.checked)}
 									className="mr-2"
 								/>
 								Use Toll Roads
 							</label>
-							<button
+							<Button
+								variant="ghost"
+								size="icon"
 								onClick={() => removeCar(car.id)}
 								className="text-red-500 hover:text-red-700 transition-colors"
 							>
 								<Trash2 className="w-5 h-5" />
-							</button>
+							</Button>
 						</div>
 					</div>
 				))}
-				<button
+				<Button
+					variant="ghost"
 					onClick={addCar}
 					className="flex items-center text-blue-500 hover:text-blue-700 transition-colors font-semibold"
 				>
 					<Plus className="w-5 h-5 mr-1" /> Add Car
-				</button>
+				</Button>
 			</div>
 		</div>
 	);

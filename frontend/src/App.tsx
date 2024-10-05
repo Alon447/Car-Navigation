@@ -1,24 +1,24 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import LandingPage from './pages/LandingPage';
-import NewSimulation from './pages/NewSimulation';
-import 'leaflet/dist/leaflet.css';
-import MapPopUp from './components/map/MapPopUp';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import SimulationSetup from './pages/SimulationSetup';
-
 function App() {
+	const queryClient = new QueryClient();
 	return (
-		<BrowserRouter>
-			<Routes>
-				<Route
-					path="/"
-					element={<LandingPage />}
-				/>
-				<Route
-					path="/setup"
-					element={<SimulationSetup />}
-				/>
-			</Routes>
-		</BrowserRouter>
+		<QueryClientProvider client={queryClient}>
+			<BrowserRouter>
+				<Routes>
+					<Route
+						path="/"
+						element={<LandingPage />}
+					/>
+					<Route
+						path="/setup"
+						element={<SimulationSetup />}
+					/>
+				</Routes>
+			</BrowserRouter>
+		</QueryClientProvider>
 	);
 }
 

@@ -8,3 +8,12 @@ export type Car = {
 	useTollRoad: boolean;
 	startTime: string;
 };
+
+export type osmData = {
+	lat: string;
+	long: string;
+	name: string;
+	display_name: string;
+	importance: number;
+	type: string;
+};
