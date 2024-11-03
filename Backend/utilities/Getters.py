@@ -132,7 +132,7 @@ def get_graph(graph_name: str):
         graph = ox.graph_from_address(graph_name, network_type='drive', dist = GRAPH_DISTANCE, simplify = True)
         modified_graph = Speeds.add_max_speed_to_graph(graph) # add max speed to the graph
         ox.save_graphml(modified_graph, filepath=path)
-
+    print("graph loaded")
     return ox.load_graphml(path),path
 
 def get_specific_directory(dir_name):
