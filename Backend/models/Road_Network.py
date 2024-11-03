@@ -28,7 +28,6 @@ class Road_Network:
 
         self.graph_name = graph_name
         self.graph, _ = Getters.get_graph(graph_name)  # use graphml file
-        print("graph loaded")
         self.nx_graph = None  # create_graph() will initialize this attribute
         """
         self.nx_graph attributes:
@@ -71,25 +70,16 @@ class Road_Network:
         None
         """
         for i, node in enumerate(self.graph.nodes):
-            id = i
-            if self.graph_name.startswith("real_seoul"):
-                osm_id = id + 1
-                self.old_to_new_node_id_dict[osm_id] = id
-                x = float(self.graph.nodes[node].get('x'))  # צריך לבדוק את הנכונות ש- x=latitde ו- y=longitude
-                y = float(self.graph.nodes[node].get('y'))
-                traffic_lights = False
-                street_count = 1
+            osm_id = int(node)
+            self.old_to_new_node_id_dict[osm_id] = id
+            x = self.graph.nodes[node].get('x')
+            y = self.graph.nodes[node].get('y')
+            if self.graph.nodes[node].get('highway') == 'traffic_signals':
+                traffic_lights = True
             else:
-                osm_id = int(node)
-                self.old_to_new_node_id_dict[osm_id] = id
-                x = self.graph.nodes[node].get('x')
-                y = self.graph.nodes[node].get('y')
-                if self.graph.nodes[node].get('highway') == 'traffic_signals':
-                    traffic_lights = True
-                else:
-                    traffic_lights = False
-                street_count = self.graph.nodes[node].get('street_count')
-            new_node = Node.Node(id, osm_id, x, y, traffic_lights, street_count)
+                traffic_lights = False
+            street_count = self.graph.nodes[node].get('street_count')
+            new_node = Node.Node(osm_id, x, y, traffic_lights, street_count)
             self.nodes_array.append(new_node)
         return
 
@@ -100,55 +90,32 @@ class Road_Network:
         Returns:
         None
         """
-        if self.graph_name.startswith("real_seoul"):
-            for i, edge in enumerate(self.graph.edges(data = True)):
-                # make new road
-                id = i
-                osm_id = str(edge[2].get('road_id'))  # Convert road_id to string
-                start_node_id = edge[0] - 1
-                end_node_id = edge[1] - 1
-                start_node = self.nodes_array[start_node_id]
-                end_node = self.nodes_array[end_node_id]
-                length = self.calculate_length(start_node, end_node)
-                max_speed = 90
-                type = "highway"
-                new_road = Road.Road(id, osm_id, start_node, end_node, length, max_speed, type, self.activate_traffic_lights, self.rain_intensity)
-                self.roads_array.append(new_road)
-                self.roads_by_nodes[(start_node_id, end_node_id)] = new_road
-                if start_node_id in self.node_connectivity_dict and isinstance(
-                        self.node_connectivity_dict[start_node_id], list):
-                    self.node_connectivity_dict[start_node_id].append(new_road.destination_node.id)
-                else:
-                    self.node_connectivity_dict[start_node_id] = [new_road.destination_node.id]
+        for i, edge in enumerate(self.graph.edges):
+            osm_id = i
+            start_node_id = self.get_node_from_osm_id(edge[0])  # int
+            end_node_id = self.get_node_from_osm_id(edge[1])  # int
+            start_node = self.nodes_array[start_node_id]  # Node object
+            end_node = self.nodes_array[end_node_id]  # Node object
+            length = round(self.graph.edges[edge]['length'], 2)  # round to 2 decimal places
+            max_speed = (self.graph.edges[edge]['maxspeed'])
+            if isinstance(max_speed, list):
+                max_speed = max_speed[0]  # Use the first element of the list
+            try:
+                max_speed = int(max_speed)
+            except Exception as e:
+                print("Error casting max_speed to int")
+                print(e)
+                max_speed = Speeds.fix_speed(max_speed)
 
-        else:
-            for i, edge in enumerate(self.graph.edges):
-                id = i
-                osm_id = id
-                start_node_id = self.get_node_from_osm_id(edge[0])  # int
-                end_node_id = self.get_node_from_osm_id(edge[1])  # int
-                start_node = self.nodes_array[start_node_id]  # Node object
-                end_node = self.nodes_array[end_node_id]  # Node object
-                length = round(self.graph.edges[edge]['length'], 2)  # round to 2 decimal places
-                max_speed = (self.graph.edges[edge]['maxspeed'])
-                if isinstance(max_speed, list):
-                    max_speed = max_speed[0]  # Use the first element of the list
-                try:
-                    max_speed = int(max_speed)
-                except Exception as e:
-                    print("Error casting max_speed to int")
-                    print(e)
-                    max_speed = Speeds.fix_speed(max_speed)
-
-                type = self.graph.edges[edge]['highway']
-                new_road = Road.Road(id, osm_id, start_node, end_node, length, max_speed, type, self.activate_traffic_lights, self.rain_intensity)
-                self.roads_array.append(new_road)
-                self.roads_by_nodes[(start_node_id, end_node_id)] = new_road
-                if start_node_id in self.node_connectivity_dict and isinstance(
-                        self.node_connectivity_dict[start_node_id], list):
-                    self.node_connectivity_dict[start_node_id].append(new_road.destination_node.id)
-                else:
-                    self.node_connectivity_dict[start_node_id] = [new_road.destination_node.id]
+            type = self.graph.edges[edge]['highway']
+            new_road = Road.Road(osm_id, start_node, end_node, length, max_speed, type, self.activate_traffic_lights, self.rain_intensity)
+            self.roads_array.append(new_road)
+            self.roads_by_nodes[(start_node_id, end_node_id)] = new_road
+            if start_node_id in self.node_connectivity_dict and isinstance(
+                    self.node_connectivity_dict[start_node_id], list):
+                self.node_connectivity_dict[start_node_id].append(new_road.destination_node.id)
+            else:
+                self.node_connectivity_dict[start_node_id] = [new_road.destination_node.id]
         return
 
     def create_graph(self):

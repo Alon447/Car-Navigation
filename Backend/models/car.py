@@ -11,10 +11,9 @@ class Car:
 
     """
 
-    def __init__(self, id: int, source_node: int, destination_node: int, starting_time: datetime, road_network: Road_Network, route_algorithm = 'random', use_existing_q_table = True):
+    def __init__(self, source_node: int, destination_node: int, starting_time: datetime, road_network: Road_Network, route_algorithm = 'random', use_existing_q_table = True):
 
-        # ID
-        self.id = id  # car id
+        self.id = Car._generate_id()
         self.road_network = road_network  # the road network the car is in
 
         # Nodes
@@ -43,7 +42,14 @@ class Car:
         self.route_algorithm_name = route_algorithm  # the algorithm the car will use to decide its route
         self.route = self.decide_route_algorithm(route_algorithm, source_node, destination_node)  # the route the car will take
 
-    # FUNCTIONS
+    # Class variable to keep track of the last assigned id
+    _last_id = 0
+
+    @classmethod
+    def _generate_id(cls):
+        cls._last_id += 1
+        return cls._last_id
+
     def decide_route_algorithm(self, route_algorithm: str, source_node: int, destination_node: int):
         """
         Decide the route algorithm based on the provided string.
@@ -71,7 +77,7 @@ class Car:
 
     def start_car(self):
         """
-        Move the car to the first road based on the starting node and update car's time until the next road.
+        Move the car to the first road-based on the starting node and update car's time until the next road.
 
         Returns:
         Road object: The first road the car will travel to.
@@ -117,8 +123,8 @@ class Car:
         self.past_nodes.append(self.current_road.destination_node.id)
         self.past_roads.append({self.current_road.id: round(time_delta_to_seconds(self.current_road_time), 2)})
 
-        id = int(next_road.id)
-        self.current_road = self.road_network.roads_array[id]
+        index = int(next_road.id)
+        self.current_road = self.road_network.roads_array[index]
         self.update_time_until_next_road(self.current_road)
         self.current_road_time = datetime.timedelta(seconds = 0)
         return self.current_road

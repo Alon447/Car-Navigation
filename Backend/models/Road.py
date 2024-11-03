@@ -10,10 +10,10 @@ class Road:
     Represents a road segment in a road network.
     """
 
-    def __init__(self, id: int, osm_id, source_node: Node, destination_node: Node, length, max_speed: int, type: str, activate_traffic_lights: bool, rain_intensity: int = 0):
+    def __init__(self, osm_id, source_node: Node, destination_node: Node, length, max_speed: int, type: str, activate_traffic_lights: bool, rain_intensity: int = 0):
 
         # Attributes
-        self.id = id
+        self.id = Road._generate_id()
         self.osm_id = osm_id
         self.source_node = source_node  # class Node (id, osm_id, lat, lon, street_count, traffic_lights)
         self.destination_node = destination_node  # class Node (id, osm_id, lat, lon, street_count, traffic_lights)
@@ -41,7 +41,14 @@ class Road:
         # Initialize
         self.calculate_time()  # initialize the estimated time
 
-    # Functions
+    # Class variable to keep track of the last assigned id
+    _last_id = 0
+
+    @classmethod
+    def _generate_id(cls):
+        cls._last_id += 1
+        return cls._last_id
+
     def calculate_time(self):
         """
         Calculate the estimated time it takes to travel the road.

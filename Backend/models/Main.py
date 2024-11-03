@@ -8,12 +8,6 @@ from models import Car
 START_TIME1 = datetime.datetime(year = 2023, month = 10, day = 4, hour = 8, minute = 0, second = 0)
 START_TIME2 = datetime.datetime(year = 2023, month = 10, day = 4, hour = 14, minute = 0, second = 0)
 
-# Constants for time intervals
-WEEK = 604800
-DAY = 86400
-HOUR = 3600
-MINUTE = 60
-
 # Simulation parameters
 NUMBER_OF_SIMULATIONS = 1
 TRAFFIC_LIGHTS = False
@@ -46,9 +40,9 @@ cars = []
 src1, dst1 = 719, 665
 src2, dst2 = 200, 300
 src3, dst3 = 300, 400
-cars.append(Car.Car(1, src1, dst1, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
-cars.append(Car.Car(2, src2, dst2, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
-cars.append(Car.Car(3, src3, dst3, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+cars.append(Car.Car(src1, dst1, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+cars.append(Car.Car(src2, dst2, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+cars.append(Car.Car(src3, dst3, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
 
 #
 # # Run simulations
