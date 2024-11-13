@@ -7,38 +7,9 @@ class CarManager:
     """
     CarManager class:
     This class manages cars within a road network simulation. It adds, removes, and updates cars during the simulation.
-
-    Attributes:
-
-    cars_waiting_to_enter (list): List of cars waiting to enter the simulation.
-
-    cars_in_simulation (dict): Dictionary of cars currently in the simulation.
-
-    cars_nearest_update (list): List of cars that determine the time of the next update.
-
-    cars_nearest_update_time (int): Time of the next update.
-
-    cars_blocked (list): List of cars blocked in the simulation.
-
-    cars_finished (list): List of cars that have finished their journey.
-
-    cars_stuck (list): List of cars stuck at the end of the simulation.
-
-    simulation_update_times (dict): Dictionary of cars that have been updated in the current time step.
-
-    Methods:
-
-    add_update_to_dictionary(self, time, car_id, x, y, node_id): Add car update information to the dictionary.
-
-    add_car(self, car, time): Add a car to the simulation.
-
-    sort_cars_in_simulation(self): Sort cars in the simulation based on the time until the next road.
-
-    calc_nearest_update_time(self, time): Calculate the time of the nearest update.
-
     """
 
-    def __init__(self, max_time):
+    def __init__(self):
         # Start of the simulation
         self.cars_waiting_to_enter = []  # a list of the cars that are waiting to enter the simulation, i.e their starting time has not arrived yet.
 
@@ -47,13 +18,11 @@ class CarManager:
         self.cars_nearest_update = []  # a list  of the cars that will determine time of the next update.
         self.cars_nearest_update_time = 0  # the time of the next update
         self.cars_blocked = []  # a list of the cars that are blocked in the simulation
-        self.max_time_for_car = datetime.timedelta(hours = 4)# the maximum time for car in the simulation
+        self.max_time_for_car = datetime.timedelta(hours = 2)
         # End of the simulation
         self.cars_finished = []  # a list of the cars that have finished their journey and are waiting to be removed from the simulation
         self.cars_stuck = []  # a list of the cars that are stuck at the end of the simulation
-        self.simulation_update_times = {}  # a dictionary of the cars that have been updated in the current time
-        # step. key is time, value is a list of the cars that have been updated in that time step
-        # along with current node
+        self.simulation_update_times = {}  # a dictionary of the cars that have been updated in the current time  # step. key is time, value is a list of the cars that have been updated in that time step  # along with current node
 
     def add_update_to_dictionary(self, time, car_id, x, y, node_id):
         """
@@ -73,29 +42,26 @@ class CarManager:
             self.simulation_update_times[time] = []
         self.simulation_update_times[time].append((car_id, (x, y), node_id))
 
-    def add_car(self, car: Car, time):
+    def add_car(self, car: Car.Car, simulation_start_time: datetime.datetime):
         """
         Add a car to the simulation.
 
         :param:
         car (Car): Car object to be added.
-        time (datetime.datetime): Current time in the simulation.
 
-        :return:
-        None
+        time (datetime.datetime): Current time in the simulation.
         """
-        car_starting_time = car.starting_time
-        if car_starting_time > time:  # car is not ready to enter the simulation
+        if car.starting_time > simulation_start_time:  # car is not ready to enter the simulation
             self.cars_waiting_to_enter.append(car)
-            self.cars_waiting_to_enter.sort(key=lambda x: x.starting_time)
+            self.cars_waiting_to_enter.sort(key = lambda x: x.starting_time)
 
         else:  # car is ready to enter the simulation
             car.start_car()
             self.cars_in_simulation[car.id] = car
         self.sort_cars_in_simulation()
-        self.calc_nearest_update_time(time)
-        x, y = car.get_xy_source()
-        self.add_update_to_dictionary(car_starting_time, car.id, x, y, car.source_node)
+        self.calc_nearest_update_time(simulation_start_time)
+        x, y = car.source_node.x, car.source_node.y
+        self.add_update_to_dictionary(car.starting_time, car.id, x, y, car.source_node)
         return
 
     def sort_cars_in_simulation(self):
@@ -111,8 +77,8 @@ class CarManager:
         if len(self.cars_in_simulation) == 0:
             return False
 
-        self.cars_in_simulation = dict(
-            sorted(self.cars_in_simulation.items(), key=lambda item: item[1].get_time_until_next_road()))
+        self.cars_in_simulation = dict(sorted(self.cars_in_simulation.items(), key = lambda item: item[
+            1].get_time_until_next_road()))
         first_index, first_car = next(iter(self.cars_in_simulation.items()))
         self.cars_nearest_update_time = first_car.get_time_until_next_road()
         return True
@@ -156,29 +122,26 @@ class CarManager:
                 starting_time = car.starting_time
         return starting_time
 
-    def update_cars(self, timeStamp: int, current_datetime: datetime.datetime):
+    def update_cars(self, time_stamp: int, current_datetime: datetime.datetime):
         """
         Update all the cars in the simulation.
 
         :param:
         timeStamp (int): The simulation time step.
         current_datetime (datetime.datetime): Current time in the simulation.
-
-        :return:
-        None
         """
         cars = self.cars_in_simulation.copy()
         blocked_cars = self.cars_blocked.copy()
 
         for key in self.cars_in_simulation:
             car = cars[key]
-            current_travel_time = car.update_travel_time(timeStamp)
+            current_travel_time = car.update_travel_time(time_stamp)
 
             # if the car travel time is longer than 2 hours, then force finish the car
             if current_travel_time > self.max_time_for_car:
                 car.force_finish()
                 self.cars_stuck.append(car)
-                x, y = car.get_xy_destination()
+                x, y = car.destination_node.x, car.destination_node.y
                 self.add_update_to_dictionary(current_datetime, car.id, x, y, car.destination_node)
                 cars.pop(car.id)
 
@@ -187,7 +150,7 @@ class CarManager:
                 result = car.move_next_road()  # result is the next road the car is on
 
                 # add update to list
-                x, y = car.get_xy_current()
+                x, y = car.current_road.source_node.x, car.current_road.source_node.y
                 self.add_update_to_dictionary(current_datetime, car.id, x, y, car.current_road.source_node.id)
 
                 if result is None:  # car is finished or stuck
@@ -196,7 +159,7 @@ class CarManager:
                     if car.car_in_destination:
                         print("car", car.id, "finished his journey after", car.total_travel_time)
                         self.cars_finished.append(car)
-                        x, y = car.get_xy_destination()
+                        x, y = car.destination_node.x, car.destination_node.y
                         self.add_update_to_dictionary(current_datetime, car.id, x, y, car.destination_node)
                     else:
                         print("car", car.id, "is stuck")
@@ -207,7 +170,6 @@ class CarManager:
                     self.cars_blocked.append(car)
                     car.is_blocked = True
                     blocked_cars.append(car)
-
 
         # after we updated all the cars, we need to handle the waiting cars
         copy_waiting_cars = self.cars_waiting_to_enter.copy()

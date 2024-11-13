@@ -26,6 +26,7 @@ class Route(ABC):
         Returns:
         Road object or None: An alternative road or None if no alternative is found.
     """
+
     @abstractmethod
     def decide_first_road(self):
         """
@@ -35,6 +36,7 @@ class Route(ABC):
         Road object: The first road the car will take.
         """
         pass
+
     @abstractmethod
     def get_next_road(self):
         """
@@ -44,6 +46,7 @@ class Route(ABC):
         Road object: The next road the car will take.
         """
         pass
+
     @abstractmethod
     def get_alt_road(self):
         """
@@ -53,6 +56,10 @@ class Route(ABC):
         Road object or None: An alternative road or None if no alternative is found.
         """
         pass
+
+    def get_route_name(self):
+        return self.__class__.__name__
+
 
 class Random_route(Route):
     def __init__(self, src_node: int, dst_node: int, road_network: Road_Network):
@@ -83,13 +90,15 @@ class Random_route(Route):
         return next_road
 
     def get_alt_road(self):
-        adjacency_list = self.road_network.node_connectivity_dict[self.current_node] # list of all the adjacent nodes ids
+        adjacency_list = self.road_network.node_connectivity_dict[
+            self.current_node]  # list of all the adjacent nodes ids
         for next_node in adjacency_list:
             road = self.road_network.get_road_from_src_dst(self.current_node, next_node)
             if not road.is_blocked and road.adjacent_roads:
                 self.current_node = next_node
                 return road
         return None
+
 
 class Q_Learning_Route(Route):
     def __init__(self, src_node: int, dst_node: int, road_network: Road_Network, start_time: datetime.datetime, use_q_table: bool = False):
@@ -158,12 +167,13 @@ class Q_Learning_Route(Route):
     def decide_first_road(self):
         if self.q_table is None:
             self.load_q_table(self.src_node, self.dst_node, self.get_tables_directory(r"Q Tables Data"))
-        action = np.argmax(self.q_table[self.src_node]) # action is the index of the destination node in the q table
-        dest_node = self.road_network.node_connectivity_dict[self.src_node][action] # dest_node is the id of the next node
+        action = np.argmax(self.q_table[self.src_node])  # action is the index of the destination node in the q table
+        dest_node = self.road_network.node_connectivity_dict[self.src_node][
+            action]  # dest_node is the id of the next node
         self.current_node = dest_node
         self.path.append(dest_node)
         # road_index = self.road_network.road_dict[(self.src_node, dest_node)]
-        return self.road_network.get_road_from_src_dst(self.src_node,dest_node)
+        return self.road_network.get_road_from_src_dst(self.src_node, dest_node)
 
     def find_best_available_road(self, next_node):
         """
@@ -182,6 +192,7 @@ class Q_Learning_Route(Route):
                     max_q = self.q_table[next_node][i]
                     best_road = next_road
         return best_road
+
     def get_next_road(self):
         # get the next road from the q table
 
@@ -205,13 +216,13 @@ class Q_Learning_Route(Route):
                     return next_road
         return None
 
-
     def get_alt_road(self):
         # index = self.path.index(self.current_node)
         self.path.pop()
         self.current_node = self.path[-1]
 
-        action = np.argmax(self.q_table[self.current_node])  # action is the index of the destination node in the q table
+        action = np.argmax(
+            self.q_table[self.current_node])  # action is the index of the destination node in the q table
         dest_node = self.road_network.node_connectivity_dict[self.current_node][action]
         next_road = self.road_network.get_road_from_src_dst(self.current_node, dest_node)
         max_q_val = float('-inf')
@@ -229,6 +240,7 @@ class Q_Learning_Route(Route):
 
         self.current_node = dest_node
         return next_road
+
 
 class Shortest_path_route(Route):
     def __init__(self, src_node: int, dst_node: int, road_network: Road_Network):
@@ -248,7 +260,6 @@ class Shortest_path_route(Route):
         self.path.append(self.current_node)
         return first_road
 
-
     def get_next_road(self):
         if self.current_node == self.dst_node:
             return None
@@ -261,9 +272,10 @@ class Shortest_path_route(Route):
         self.path.pop()
         self.current_node = self.path[-1]
         print("get_alt_road")
-        adjacency_list = self.road_network.node_connectivity_dict[self.current_node]  # list of all the adjacent nodes ids
+        adjacency_list = self.road_network.node_connectivity_dict[
+            self.current_node]  # list of all the adjacent nodes ids
         for next_node in adjacency_list:
-            road = self.road_network.get_road_from_src_dst(self.current_node, next_node) # this is "road"
+            road = self.road_network.get_road_from_src_dst(self.current_node, next_node)  # this is "road"
             if not road.is_blocked:
                 # if the road is not blocked, we check if the any road on the shortest path is blocked
                 # if not, we return the road

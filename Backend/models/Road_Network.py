@@ -2,7 +2,7 @@ import datetime
 import networkx as nx
 import Utilities.Getters as Getters
 import Utilities.Speeds as Speeds
-from math import radians, sin, cos, sqrt, atan2
+# from math import radians, sin, cos, sqrt, atan2
 
 from models import Node, Road
 
@@ -44,7 +44,7 @@ class Road_Network:
         self.node_connectivity_dict = {}  # node id to list of connected nodes ids
         self.blocked_roads_array = []
         self.blocked_roads_dict = {}  # key: road id, value: list of blocked times
-
+        self.roads_speeds = {}
         # Flags
         self.traffic_white_noise = traffic_white_noise
         self.rain_intensity = rain_intensity
@@ -71,7 +71,7 @@ class Road_Network:
         """
         for i, node in enumerate(self.graph.nodes):
             osm_id = int(node)
-            self.old_to_new_node_id_dict[osm_id] = id
+            self.old_to_new_node_id_dict[osm_id] = i
             x = self.graph.nodes[node].get('x')
             y = self.graph.nodes[node].get('y')
             if self.graph.nodes[node].get('highway') == 'traffic_signals':
@@ -107,8 +107,8 @@ class Road_Network:
                 print(e)
                 max_speed = Speeds.fix_speed(max_speed)
 
-            type = self.graph.edges[edge]['highway']
-            new_road = Road.Road(osm_id, start_node, end_node, length, max_speed, type, self.activate_traffic_lights, self.rain_intensity)
+            road_type = self.graph.edges[edge]['highway']
+            new_road = Road.Road(osm_id, start_node, end_node, length, max_speed, road_type, self.activate_traffic_lights, self.rain_intensity)
             self.roads_array.append(new_road)
             self.roads_by_nodes[(start_node_id, end_node_id)] = new_road
             if start_node_id in self.node_connectivity_dict and isinstance(
@@ -219,69 +219,29 @@ class Road_Network:
         self.blocked_roads_array.remove(road_id)
         return
 
-    def calculate_length(self, start_node, end_node):
-        lat1_rad = radians(float(start_node.y))
-        lon1_rad = radians(float(start_node.x))
-        lat2_rad = radians(float(end_node.y))
-        lon2_rad = radians(float(end_node.x))
-
-        # Radius of the Earth in kilometers
-        earth_radius = 6371.0
-
-        # Calculate the differences between latitudes and longitudes
-        d_lat = lat2_rad - lat1_rad
-        d_lon = lon2_rad - lon1_rad
-
-        # Haversine formula
-        a = sin(d_lat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(d_lon / 2) ** 2
-        c = 2 * atan2(sqrt(a), sqrt(1 - a))
-
-        # Calculate the distance
-        distance = earth_radius * c
-        return round(1000 * distance, 2)
-
-    def set_roads_speeds_from_dict(self, data: dict, day, current_time: datetime):
+    def set_roads_speeds_from_dict(self, data: dict, day: int, current_time: datetime):
         """
         Update road speeds based on the provided speeds dictionary and current time.
-
-        Args:
-        roads_speeds (dict): Dictionary of road_id: speed for different times of the day.
-        current_time (datetime): Current time in the simulation.
-
-        Returns:
-        None
         """
+        self.roads_speeds = data
         for road in self.roads_array:
-            if self.graph_name.startswith("real_seoul"):
-                road_id = road.osm_id
-                str_road_id = str(road_id)
-                dict_keys = list(data.keys())
-                last_key = dict_keys[-1]
-                road.update_eta_dict_from_file(data[last_key][str(day)][str_road_id])
-                new_eta = road.get_eta(f"{current_time.hour:02d}:{current_time.minute:02d}")
-            else:
-                road_id = road.id
-                str_road_id = str(road_id)
-                road.update_road_speed_dict(data[str_road_id])  # update the road's speed dict
-                new_eta = road.update_estimated_time(current_time, self.traffic_white_noise)  # update the road's current speed
+            new_eta = road.update_estimated_time(data[str(day)][str(road.id)][current_time.strftime("%H:%M")])
             src = road.source_node.id
             dest = road.destination_node.id
             self.nx_graph.edges[src, dest, 0]['current_speed'] = road.current_speed
             self.nx_graph.edges[src, dest, 0]['eta'] = new_eta
         return
 
-    def update_roads_speeds(self, current_time: datetime):
+    def update_roads_speeds(self, day: int, current_time: datetime):
         """
         Update road speeds based on the current time.
 
         Args:
         current_time (datetime): Current time in the simulation.
-
-        Returns:
-        None
         """
         for road in self.roads_array:
-            new_eta = road.update_estimated_time(current_time, self.traffic_white_noise)
+            # new_eta = road.update_estimated_time(current_time, self.traffic_white_noise)
+            new_eta = road.update_estimated_time(self.roads_speeds[str(day)][str(road.id)][current_time.strftime("%H:%M")])
             src = road.source_node.id
             dest = road.destination_node.id
             block = road.is_blocked

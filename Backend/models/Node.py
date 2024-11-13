@@ -13,7 +13,7 @@ class Node:
         self.connected_nodes = []
 
     # Class variable to keep track of the last assigned id
-    _last_id = 0
+    _last_id = -1
 
     @classmethod
     def _generate_id(cls):

@@ -26,7 +26,7 @@ SIMULATION_SPEED = 5  # X30 faster than one second interval
 PLOT_RESULTS = True
 
 # Initialize Simulation Manager
-PLACE_NAME = 'TLV'
+PLACE_NAME = 'netanya'
 SM = Simulation_manager.Simulation_manager(PLACE_NAME, TRAFFIC_LIGHTS, Rain_intensity, TRAFFIC_WHITE_NOISE, PLOT_RESULTS, START_TIME1)
 # CM = SM.car_manager
 RN = SM.road_network
@@ -40,13 +40,14 @@ cars = []
 src1, dst1 = 719, 665
 src2, dst2 = 200, 300
 src3, dst3 = 300, 400
-cars.append(Car.Car(src1, dst1, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
-cars.append(Car.Car(src2, dst2, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
-cars.append(Car.Car(src3, dst3, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+SM.create_car(src1, dst1, START_TIME1, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE)
+# cars.append(Car.Car(src1, dst1, START_TIME1, RN, route_algorithm = "random", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+# cars.append(Car.Car(src1, dst1, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
+# cars.append(Car.Car(src1, dst1, START_TIME1, RN, route_algorithm = "sp", use_existing_q_table = USE_ALREADY_GENERATED_Q_TABLE))
 
 #
 # # Run simulations
-# SM.run_full_simulation(cars, NUMBER_OF_SIMULATIONS, num_episodes=3000, max_steps_per_episode=100)
+SM.run_full_simulation(NUMBER_OF_SIMULATIONS, num_episodes = 3000, max_steps_per_episode = 100)
 # routes = SM.get_simulation_routes(cars, 0)
 #
 # # Initialize Animation
@@ -56,8 +57,7 @@ cars.append(Car.Car(src3, dst3, START_TIME1, RN, route_algorithm = "sp", use_exi
 # # SM.simulation_results = read_results_from_JSON(SM.graph_name)
 # times = get_simulation_times(SM)
 #
-# print_simulation_results(SM)
-#
+print_simulation_results(SM)  #
 # plot_simulation_overview(json_name)
 # # car_times_bar_chart(SM, 2)
 # # car_times_bar_chart(SM, 1)
